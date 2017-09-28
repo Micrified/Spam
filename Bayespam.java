@@ -1,6 +1,7 @@
 import java.io.*;
 import java.util.*;
 
+
 public class Bayespam
 {
     // This defines the two types of messages we have.
