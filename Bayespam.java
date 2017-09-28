@@ -15,6 +15,45 @@ public class Bayespam
         int counter_spam    = 0;
         int counter_regular = 0;
 
+        /// Class conditional probabilities.
+        private double regularCCP = 0;
+        private double spamCCP = 0;
+
+        // Log of Class Conditional Probabilities
+        private double regularLCCP = 0, spamLCCP = 0;
+
+        /// Sets class conditional probabilities.
+        public void setCCPs (double nregular, double nspam, double epsilon) {
+            regularCCP = ((counter_regular == 0 ? epsilon : counter_regular) / nregular);
+            spamCCP = ((counter_spam == 0 ? epsilon : counter_spam) / nspam);
+
+            setLCCPs(nregular, nspam, epsilon);
+        }
+
+        /// Sets class log conditional probabilities.
+        public void setLCCPs (double nregular, double nspam, double epsilon) {
+            regularLCCP = (Math.log10(counter_regular == 0 ? epsilon : counter_regular) - Math.log10(nregular));
+            spamLCCP = (Math.log10(counter_spam == 0 ? epsilon : counter_spam) - Math.log10(nspam));
+        }
+
+        /// Getters
+
+        public double getRegularCCP () {
+            return this.regularCCP;
+        }
+
+        public double getSpamCCP () {
+            return this.spamCCP;
+        }
+
+        public double getRegularLCCP () {
+            return this.regularLCCP;
+        }
+
+        public double getSpamLCCP () {
+            return this.spamLCCP;
+        }
+
         // Increase one of the counters by one
         public void incrementCounter(MessageType type)
         {
@@ -29,6 +68,10 @@ public class Bayespam
     // Listings of the two subdirectories (regular/ and spam/)
     private static File[] listing_regular = new File[0];
     private static File[] listing_spam = new File[0];
+
+    /// Prior Probabilities.
+    static double  prior_regular = 0;
+    static double prior_spam    = 0;
 
     // A hash table for the vocabulary (word searching is very fast in a hash table)
     private static Hashtable <String, Multiple_Counter> vocab = new Hashtable <String, Multiple_Counter> ();
@@ -79,7 +122,33 @@ public class Bayespam
             counter  = vocab.get(word);
             
             System.out.println( word + " | in regular: " + counter.counter_regular + 
-                                " in spam: "    + counter.counter_spam);
+                                " in spam: "    + counter.counter_spam + " | Regular LCCP: " + 
+                                counter.getRegularLCCP() + " | Spam LCCP: " + counter.getSpamLCCP());
+        }
+    }
+
+    /// Count the number of words of the specified type.
+    public static int wordCount (MessageType type) {
+        int n = 0;
+        Multiple_Counter counter;
+
+        for (Enumeration <String> e = vocab.keys(); e.hasMoreElements();) {
+            counter = vocab.get(e.nextElement());
+            n += (type == MessageType.NORMAL) ? counter.counter_regular : counter.counter_spam;
+        }
+
+        return n;
+    }
+
+    /// Sets all class conditional probabilities.
+    public static void setCCPs (int epsilon) {
+        int nregular = wordCount(MessageType.NORMAL);
+        int nspam = wordCount(MessageType.SPAM);
+        Multiple_Counter counter;
+
+        for (Enumeration <String> e = vocab.keys(); e.hasMoreElements();) {
+            counter = vocab.get(e.nextElement());
+            counter.setCCPs(nregular, nspam, epsilon);
         }
     }
 
@@ -134,6 +203,29 @@ public class Bayespam
             in.close();
         }
     }
+
+    /// Classifies new messages as either Normal or Spam.
+    public static MessageType classify (String pathname) throws IOException {
+        File file = new File(pathname);
+        FileInputStream i_s = new FileInputStream(file);
+        BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
+        String line, word;
+        double posterior_spam = prior_spam, posterior_regular = prior_regular;
+
+        while ((line = in.readLine()) != null) {
+            StringTokenizer st = new StringTokenizer(line);         
+            
+            while (st.hasMoreTokens()) {
+                if (vocab.containsKey((word = st.nextToken()))) {
+                    posterior_regular += vocab.get(word).getRegularLCCP();
+                    posterior_spam    += vocab.get(word).getSpamLCCP();
+                }                
+            }
+        }
+        in.close();       
+        
+        return (posterior_regular > posterior_spam ? MessageType.NORMAL : MessageType.SPAM);
+    }
    
     public static void main(String[] args)
     throws IOException
@@ -151,12 +243,25 @@ public class Bayespam
         // Initialize the regular and spam lists
         listDirs(dir_location);
 
+        /// Compute prior probabilities now that directory contents are loaded.
+        double nregular      = listing_regular.length;
+        double nspam         = listing_spam.length;
+        double ntotal        = nregular + nspam;
+        prior_regular = (nregular / ntotal);
+        prior_spam    = (nspam / ntotal);
+
         // Read the e-mail messages
         readMessages(MessageType.NORMAL);
         readMessages(MessageType.SPAM);
 
+        /// Set all class conditional probabilities.
+        setCCPs(1);
+
         // Print out the hash table
         printVocab();
+
+        /// Test regular or spam message.
+        System.out.println(args[1] + " is a " + (classify(args[1]) == MessageType.NORMAL ? "regular" : "spam") + " message.");
         
         // Now all students must continue from here:
         //
