@@ -83,6 +83,22 @@ public class Bayespam
         }
     }
 
+    /// Returns True if the word
+    /// 1. Has length >= 4
+    /// 2. Is only composed of letters.
+    private static Boolean isValidWord (String word) {
+        int i, n;
+
+        if ((n = word.length()) < 4) {
+            return false;
+        }
+        for (i = 0; i < n; i++) {
+            if (Character.isLetter(word.charAt(i)) == false) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     // Read the words from messages and add them to your vocabulary. The boolean type determines whether the messages are regular or not  
     private static void readMessages(MessageType type)
@@ -107,9 +123,11 @@ public class Bayespam
             {
                 StringTokenizer st = new StringTokenizer(line);         // parse it into words
         
-                while (st.hasMoreTokens())                  // while there are stille words left..
+                while (st.hasMoreTokens())                              // while there are still words left..
                 {
-                    addWord(st.nextToken(), type);                  // add them to the vocabulary
+                    if (isValidWord((word = st.nextToken()))) {         // add them to the vocabulary
+                        addWord(word.toLowerCase(), type);              /// add only lower case variant.
+                    }                
                 }
             }
 
