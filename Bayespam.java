@@ -93,6 +93,7 @@ public class Bayespam
 
     // List the regular and spam messages
     private static void listDirs(File dir_location)
+    throws IOException
     {
         // List all files in the directory passed
         File[] dir_listing = dir_location.listFiles();
@@ -106,6 +107,11 @@ public class Bayespam
 
         listing_regular = dir_listing[0].listFiles();
         listing_spam    = dir_listing[1].listFiles();
+
+        // Verify folders were chosen correctly.
+        if (!(dir_listing[0].getName().equals("regular") && dir_listing[1].getName().equals("spam"))) {
+            throw new FileNotFoundException("Can't locate regular and spam folders in " + dir_location.getName());
+        }
     }
 
     
@@ -259,9 +265,6 @@ public class Bayespam
 
         // Print out the hash table
         printVocab();
-
-        /// Test regular or spam message.
-        System.out.println(args[1] + " is a " + (classify(args[1]) == MessageType.NORMAL ? "regular" : "spam") + " message.");
         
         // Now all students must continue from here:
         //
