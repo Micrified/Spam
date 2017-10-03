@@ -101,7 +101,7 @@ public class Bayespam
         // Check that there are 2 subdirectories
         if ( dir_listing.length != 2 )
         {
-            System.out.println( "- Error: specified directory does not contain two subdirectories.\n" );
+            System.out.println( "- Error: " + dir_location.getName() + " does not contain two subdirectories.\n" );
             Runtime.getRuntime().exit(0);
         }
 
@@ -210,9 +210,29 @@ public class Bayespam
         }
     }
 
+    /// Determines the ratio of email classifications for files in a given directory. 
+    public static void directoryClassifier (MessageType type) throws IOException {
+        int spam = 0, regular = 0;
+
+        /// Create list of all files in directory.
+        File[] files = (type == MessageType.SPAM ? listing_spam : listing_regular);
+
+        /// Classify all files.
+        for (int i = 0; i < files.length; i++) {
+            if (classify(files[i]) == MessageType.SPAM) {
+                spam++;
+            } else {
+                regular++;
+            }
+        }
+
+        /// Print ratio.
+        String listingType = (type == MessageType.SPAM) ? "Spam" : "Regular";
+        System.out.println(listingType + " has " + spam + " spam files and " + regular + " regular ones.");
+    }
+
     /// Classifies new messages as either Normal or Spam.
-    public static MessageType classify (String pathname) throws IOException {
-        File file = new File(pathname);
+    public static MessageType classify (File file) throws IOException {
         FileInputStream i_s = new FileInputStream(file);
         BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
         String line, word;
@@ -232,22 +252,26 @@ public class Bayespam
         
         return (posterior_regular > posterior_spam ? MessageType.NORMAL : MessageType.SPAM);
     }
-   
-    public static void main(String[] args)
-    throws IOException
-    {
-        // Location of the directory (the path) taken from the cmd line (first arg)
-        File dir_location = new File( args[0] );
+
+    /// Loads a directory and saves all spam listings to listing_spam and regular listings to listing_regular.
+    public static void loadDirectory (String directoryPath) throws IOException {
+
+        File dir_location = new File(directoryPath);
         
-        // Check if the cmd line arg is a directory
-        if ( !dir_location.isDirectory() )
-        {
-            System.out.println( "- Error: cmd line arg not a directory.\n" );
-            Runtime.getRuntime().exit(0);
+        /// Check if the cmd line arg is a directory
+        if (!dir_location.isDirectory()) {
+            throw new FileNotFoundException(directoryPath + " is not a directory!");
         }
 
         // Initialize the regular and spam lists
         listDirs(dir_location);
+    }
+   
+    public static void main(String[] args)
+    throws IOException
+    {
+        /// Loading the training directory.
+        loadDirectory(args[0]);
 
         /// Compute prior probabilities now that directory contents are loaded.
         double nregular      = listing_regular.length;
@@ -263,8 +287,12 @@ public class Bayespam
         /// Set all class conditional probabilities.
         setCCPs(1);
 
-        // Print out the hash table
-        printVocab();
+        /// Loading the test directory.
+        loadDirectory(args[1]);
+
+        /// Count classifications of files in both spam and regular.
+        directoryClassifier(MessageType.NORMAL);
+        directoryClassifier(MessageType.SPAM);
         
         // Now all students must continue from here:
         //
