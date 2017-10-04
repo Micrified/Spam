@@ -3,6 +3,11 @@ import java.util.*;
 
 public class BigramBayespam
 {
+    /// Program constants
+    static int minWordLength       = 4;
+    static int eta                 = 1;
+    static int minBigramOccurance  = 2;
+
     // This defines the two types of messages we have.
     static enum MessageType
     {
@@ -173,7 +178,7 @@ public class BigramBayespam
     private static Boolean isValidWord (String word) {
         int i, n;
 
-        if ((n = word.length()) < 4) {
+        if ((n = word.length()) < minWordLength) {
             return false;
         }
         for (i = 0; i < n; i++) {
@@ -254,7 +259,7 @@ public class BigramBayespam
     public static MessageType classify (File file) throws IOException {
         FileInputStream i_s = new FileInputStream(file);
         BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
-        String line, lastword = null, bigram;
+        String line, word, lastword = null, bigram;
         double posterior_spam = prior_spam, posterior_regular = prior_regular;
 
         while ((line = in.readLine()) != null) {
@@ -262,16 +267,23 @@ public class BigramBayespam
             
             while (st.hasMoreTokens()) {
 
+                /// Get first word.
                 if (lastword == null) {
                     lastword = st.nextToken();
                     continue;
                 }
 
+                /// Get next word, create bigram.
+                word = st.nextToken();
+                bigram = (lastword + " " + word).toLowerCase();
 
-                if (vocab.containsKey((bigram = lastword + " " + st.nextToken()))) {
+                /// Increment posterior probabilities if bugram in table.
+                if (vocab.containsKey(bigram)) {
                     posterior_regular += vocab.get(bigram).getRegularLCCP();
                     posterior_spam    += vocab.get(bigram).getSpamLCCP();
-                }                
+                } 
+                
+                lastword = word;               
             }
         }
         in.close();       
@@ -296,6 +308,9 @@ public class BigramBayespam
     public static void main(String[] args)
     throws IOException
     {
+        /// Print program parameters.
+        System.out.println("minWordLength = " + minWordLength + ", eta = " + eta + ", minBigramOccurance = " + minBigramOccurance);
+
         /// Loading the training directory.
         loadDirectory(args[0]);
 
@@ -311,15 +326,14 @@ public class BigramBayespam
         readMessages(MessageType.SPAM);
 
         /// Apply filters.
-        filterByMinOccurance(2);
+        filterByMinOccurance(minBigramOccurance);
 
         /// Set all class conditional probabilities.
-        setCCPs(1);
+        setCCPs(eta);
 
         /// Loading the test directory.
         loadDirectory(args[1]);
 
-        printVocab();
         System.out.println("There are " + vocab.size() + " unique bigrams.");
 
         /// Count classifications of files in both spam and regular.

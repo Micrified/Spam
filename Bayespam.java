@@ -10,6 +10,8 @@ public class Bayespam
         NORMAL, SPAM
     }
 
+    /* ************************* MULTIPLE_COUNTER ****************************/
+
     // This a class with two counters (for regular and for spam)
     static class Multiple_Counter
     {
@@ -20,7 +22,7 @@ public class Bayespam
         private double regularCCP = 0;
         private double spamCCP = 0;
 
-        // Log of Class Conditional Probabilities
+        /// Log of Class Conditional Probabilities
         private double regularLCCP = 0, spamLCCP = 0;
 
         /// Sets class conditional probabilities.
@@ -37,20 +39,22 @@ public class Bayespam
             spamLCCP = (Math.log10(counter_spam == 0 ? epsilon : counter_spam) - Math.log10(nspam));
         }
 
-        /// Getters
-
+        /// Getter: RegularCCP
         public double getRegularCCP () {
             return this.regularCCP;
         }
 
+        /// Getter: SpamCCP
         public double getSpamCCP () {
             return this.spamCCP;
         }
 
+        /// Getter: RegularLCCP
         public double getRegularLCCP () {
             return this.regularLCCP;
         }
 
+        /// Getter: RegularLCCP
         public double getSpamLCCP () {
             return this.spamLCCP;
         }
@@ -65,6 +69,8 @@ public class Bayespam
             }
         }
     }
+    
+    /* **************************** PROPERTIES *******************************/
 
     // Listings of the two subdirectories (regular/ and spam/)
     private static File[] listing_regular = new File[0];
@@ -77,6 +83,7 @@ public class Bayespam
     // A hash table for the vocabulary (word searching is very fast in a hash table)
     private static Hashtable <String, Multiple_Counter> vocab = new Hashtable <String, Multiple_Counter> ();
 
+    /* ************************* BAYESPAM METHODS ****************************/
     
     // Add a word to the vocabulary
     private static void addWord(String word, MessageType type)
@@ -267,6 +274,9 @@ public class Bayespam
         // Initialize the regular and spam lists
         listDirs(dir_location);
     }
+
+
+    /* ****************************** MAIN ***********************************/
    
     public static void main(String[] args)
     throws IOException
@@ -275,11 +285,11 @@ public class Bayespam
         loadDirectory(args[0]);
 
         /// Compute prior probabilities now that directory contents are loaded.
-        double nregular      = listing_regular.length;
-        double nspam         = listing_spam.length;
-        double ntotal        = nregular + nspam;
-        prior_regular = (nregular / ntotal);
-        prior_spam    = (nspam / ntotal);
+        double nregular         = listing_regular.length;
+        double nspam            = listing_spam.length;
+        double ntotal           = nregular + nspam;
+        prior_regular           = (nregular / ntotal);
+        prior_spam              = (nspam / ntotal);
 
         // Read the e-mail messages
         readMessages(MessageType.NORMAL);
@@ -287,16 +297,10 @@ public class Bayespam
 
         /// Set all class conditional probabilities.
         setCCPs(1);
-
-        /// Loading the test directory.
-        //loadDirectory(args[1]);
-
-	printVocab();
-	System.out.println("There are " + vocab.size() + " unique 'bigrams'");
 		
         /// Count classifications of files in both spam and regular.
-        //directoryClassifier(MessageType.NORMAL);
-        //directoryClassifier(MessageType.SPAM);
+        directoryClassifier(MessageType.NORMAL);
+        directoryClassifier(MessageType.SPAM);
         
         // Now all students must continue from here:
         //
