@@ -81,8 +81,8 @@ public class Bayespam
     private static File[] listing_spam = new File[0];
 
     /// Prior Probabilities.
-    static double  prior_regular        = 0;
-    static double prior_spam            = 0;
+    static double  logPrior_regular        = 0;
+    static double logPrior_spam            = 0;
 
     // A hash table for the vocabulary (word searching is very fast in a hash table)
     private static Hashtable <String, Multiple_Counter> vocab = new Hashtable <String, Multiple_Counter> ();
@@ -161,21 +161,22 @@ public class Bayespam
         FileInputStream i_s = new FileInputStream(file);
         BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
         String line, word;
-        double posterior_spam = prior_spam, posterior_regular = prior_regular;
-
+        double posterior_spam = logPrior_spam, posterior_regular = logPrior_regular;
+	int count = 0;
         while ((line = in.readLine()) != null) {
             StringTokenizer st = new StringTokenizer(line);         
             
             while (st.hasMoreTokens()) {
                 word = st.nextToken().toLowerCase();
                 if (vocab.containsKey(word)) {
+		    count++;
                     posterior_regular += vocab.get(word).getRegularLCCP();
                     posterior_spam    += vocab.get(word).getSpamLCCP();
                 }                
             }
         }
         in.close();       
-        
+        System.out.println(file.getName() + " contains " + count + " words from the hash-table");
         return (posterior_regular > posterior_spam ? MessageType.NORMAL : MessageType.SPAM);
     }
 
@@ -300,8 +301,8 @@ public class Bayespam
         double nregular         = listing_regular.length;
         double nspam            = listing_spam.length;
         double ntotal           = nregular + nspam;
-        prior_regular           = (nregular / ntotal);
-        prior_spam              = (nspam / ntotal);
+        logPrior_regular           = Math.log10(nregular) - Math.log10(ntotal);
+        logPrior_spam              = Math.log10(nspam) - Math.log10(ntotal);
 
         // Read the e-mail messages
         readMessages(MessageType.NORMAL);
