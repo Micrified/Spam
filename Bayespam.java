@@ -72,57 +72,26 @@ public class Bayespam
     
     /* **************************** PROPERTIES *******************************/
 
+    /// Program Constants
+    private static int epsilon          = 1;
+    private static int minWordLength    = 4;
+
     // Listings of the two subdirectories (regular/ and spam/)
     private static File[] listing_regular = new File[0];
     private static File[] listing_spam = new File[0];
 
     /// Prior Probabilities.
-    static double  prior_regular = 0;
-    static double prior_spam    = 0;
+    static double  prior_regular        = 0;
+    static double prior_spam            = 0;
 
     // A hash table for the vocabulary (word searching is very fast in a hash table)
     private static Hashtable <String, Multiple_Counter> vocab = new Hashtable <String, Multiple_Counter> ();
 
     /* ************************* BAYESPAM METHODS ****************************/
-    
-    // Add a word to the vocabulary
-    private static void addWord(String word, MessageType type)
-    {
-        Multiple_Counter counter = new Multiple_Counter();
-
-        if ( vocab.containsKey(word) ){                  // if word exists already in the vocabulary..
-            counter = vocab.get(word);                  // get the counter from the hashtable
-        }
-        counter.incrementCounter(type);                 // increase the counter appropriately
-
-        vocab.put(word, counter);                       // put the word with its counter into the hashtable
-    }
-
-
-    // List the regular and spam messages
-    private static void listDirs(File dir_location)
-    throws IOException
-    {
-        // List all files in the directory passed
-        File[] dir_listing = dir_location.listFiles();
-
-        // Check that there are 2 subdirectories
-        if ( dir_listing.length != 2 )
-        {
-            System.out.println( "- Error: " + dir_location.getName() + " does not contain two subdirectories.\n" );
-            Runtime.getRuntime().exit(0);
-        }
-
-        listing_regular = dir_listing[0].listFiles();
-        listing_spam    = dir_listing[1].listFiles();
-
-        // Verify folders were chosen correctly.
-        if (!(dir_listing[0].getName().equals("regular") && dir_listing[1].getName().equals("spam"))) {
-            throw new FileNotFoundException("Can't locate regular and spam folders in " + dir_location.getName());
-        }
-    }
 
     
+    /* ************************** PRINT/UTILITY ******************************/
+
     // Print the current content of the vocabulary
     private static void printVocab()
     {
@@ -154,8 +123,10 @@ public class Bayespam
         return n;
     }
 
+    /* ************************** CCP/VALIDATION *****************************/
+
     /// Sets all class conditional probabilities.
-    public static void setCCPs (int epsilon) {
+    public static void setCCPs () {
         int nregular = wordCount(MessageType.NORMAL);
         int nspam = wordCount(MessageType.SPAM);
         Multiple_Counter counter;
@@ -172,7 +143,7 @@ public class Bayespam
     private static Boolean isValidWord (String word) {
         int i, n;
 
-        if ((n = word.length()) < 4) {
+        if ((n = word.length()) < minWordLength) {
             return false;
         }
         for (i = 0; i < n; i++) {
@@ -183,61 +154,7 @@ public class Bayespam
         return true;
     }
 
-    // Read the words from messages and add them to your vocabulary. The boolean type determines whether the messages are regular or not  
-    private static void readMessages(MessageType type)
-    throws IOException
-    {
-        File[] messages = new File[0];
-
-        if (type == MessageType.NORMAL){
-            messages = listing_regular;
-        } else {
-            messages = listing_spam;
-        }
-        
-        for (int i = 0; i < messages.length; ++i)
-        {
-            FileInputStream i_s = new FileInputStream( messages[i] );
-            BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
-            String line;
-            String word;
-            
-            while ((line = in.readLine()) != null)                      // read a line
-            {
-                StringTokenizer st = new StringTokenizer(line);         // parse it into words
-        
-                while (st.hasMoreTokens())                              // while there are still words left..
-                {
-                    if (isValidWord((word = st.nextToken()))) {         // add them to the vocabulary
-                        addWord(word.toLowerCase(), type);              /// add only lower case variant.
-                    }                
-                }
-            }
-
-            in.close();
-        }
-    }
-
-    /// Determines the ratio of email classifications for files in a given directory. 
-    public static void directoryClassifier (MessageType type) throws IOException {
-        int spam = 0, regular = 0;
-
-        /// Create list of all files in directory.
-        File[] files = (type == MessageType.SPAM ? listing_spam : listing_regular);
-
-        /// Classify all files.
-        for (int i = 0; i < files.length; i++) {
-            if (classify(files[i]) == MessageType.SPAM) {
-                spam++;
-            } else {
-                regular++;
-            }
-        }
-
-        /// Print ratio.
-        String listingType = (type == MessageType.SPAM) ? "Spam" : "Regular";
-        System.out.println(listingType + " has " + spam + " spam files and " + regular + " regular ones.");
-    }
+    /* *************************** CLASSIFICATION ****************************/
 
     /// Classifies new messages as either Normal or Spam.
     public static MessageType classify (File file) throws IOException {
@@ -262,6 +179,101 @@ public class Bayespam
         return (posterior_regular > posterior_spam ? MessageType.NORMAL : MessageType.SPAM);
     }
 
+    /// Determines the ratio of email classifications for files in a given directory. 
+    public static void directoryClassifier (MessageType type) throws IOException {
+        int spam = 0, regular = 0;
+
+        /// Create list of all files in directory.
+        File[] files = (type == MessageType.SPAM ? listing_spam : listing_regular);
+
+        /// Classify all files.
+        for (int i = 0; i < files.length; i++) {
+            if (classify(files[i]) == MessageType.SPAM) {
+                spam++;
+            } else {
+                regular++;
+            }
+        }
+
+        /// Print ratio.
+        String listingType = (type == MessageType.SPAM) ? "Spam" : "Regular";
+        System.out.println(listingType + " has " + spam + " spam files and " + regular + " regular ones.");
+    }
+
+    /* ************************* VOCAB CONSTRUCTION **************************/
+
+    // Add a word to the vocabulary
+    private static void addWord(String word, MessageType type)
+    {
+        Multiple_Counter counter = new Multiple_Counter();
+
+        if ( vocab.containsKey(word) ){                  // if word exists already in the vocabulary..
+            counter = vocab.get(word);                  // get the counter from the hashtable
+        }
+        counter.incrementCounter(type);                 // increase the counter appropriately
+
+        vocab.put(word, counter);                       // put the word with its counter into the hashtable
+    }
+
+    // Read the words from messages and add them to your vocabulary. The boolean type determines whether the messages are regular or not  
+    private static void readMessages (MessageType type)
+    throws IOException
+    {
+        File[] messages = new File[0];
+
+        if (type == MessageType.NORMAL){
+            messages = listing_regular;
+        } else {
+            messages = listing_spam;
+        }
+        
+        for (int i = 0; i < messages.length; ++i)
+        {
+            FileInputStream i_s = new FileInputStream( messages[i] );
+            BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
+            String line;
+            String word;
+            
+            while ((line = in.readLine()) != null)                      // read a line
+            {
+                StringTokenizer st = new StringTokenizer(line);         // parse it into words
+        
+                while (st.hasMoreTokens())                              // while there are still words left..
+                {
+                    word = st.nextToken().toLowerCase();                /// add only lower case variant.
+                    if (isValidWord(word)) {
+                        addWord(word, type);              
+                    }                
+                }
+            }
+
+            in.close();
+        }
+    }
+
+    // List the regular and spam messages
+    private static void listDirs(File dir_location)
+    throws IOException
+    {
+        // List all files in the directory passed
+        File[] dir_listing = dir_location.listFiles();
+
+        // Check that there are 2 subdirectories
+        if ( dir_listing.length != 2 )
+        {
+            System.out.println( "- Error: " + dir_location.getName() + " does not contain two subdirectories.\n" );
+            Runtime.getRuntime().exit(0);
+        }
+
+        listing_regular = dir_listing[0].listFiles();
+        listing_spam    = dir_listing[1].listFiles();
+
+        // Verify folders were chosen correctly.
+        if (!(dir_listing[0].getName().equals("regular") && dir_listing[1].getName().equals("spam"))) {
+            throw new FileNotFoundException("Can't locate regular and spam folders in " + dir_location.getName());
+        }
+    }
+
     /// Loads a directory and saves all spam listings to listing_spam and regular listings to listing_regular.
     public static void loadDirectory (String directoryPath) throws IOException {
 
@@ -275,7 +287,6 @@ public class Bayespam
         // Initialize the regular and spam lists
         listDirs(dir_location);
     }
-
 
     /* ****************************** MAIN ***********************************/
    
@@ -297,7 +308,7 @@ public class Bayespam
         readMessages(MessageType.SPAM);
 
         /// Set all class conditional probabilities.
-        setCCPs(1);
+        setCCPs();
 		
         /// Count classifications of files in both spam and regular.
         directoryClassifier(MessageType.NORMAL);
