@@ -142,11 +142,24 @@ public class BigramBayespam
         return n;
     }
 
+    /// Filters all bigrams in the hash table that occur less than 'n' times.
+    public static void filterByMinOccurance (int threshhold) {
+        for (Enumeration <String> e = vocab.keys(); e.hasMoreElements();) {
+            String key = e.nextElement();
+            Multiple_Counter counter = vocab.get(key);
+            if (counter.counter_regular + counter.counter_spam < threshhold) {
+                vocab.remove(key);
+            }
+        }
+    }
+
     /// Sets all class conditional probabilities.
     public static void setCCPs (int epsilon) {
         int nregular = bigramCount(MessageType.NORMAL);
         int nspam = bigramCount(MessageType.SPAM);
         Multiple_Counter counter;
+
+        System.out.println("There are " + nregular + " regular bigrams and " + nspam + " spam ones.");
 
         for (Enumeration <String> e = vocab.keys(); e.hasMoreElements();) {
             counter = vocab.get(e.nextElement());
@@ -205,9 +218,10 @@ public class BigramBayespam
 
                     /* Create a bigram with the last valid word and new. Then set old to new. */
                     if (isValidWord((word = st.nextToken()))) {         
-                        addBigram(lastword.toLowerCase() + word.toLowerCase(), type);
-                        lastword = word;
+                        addBigram(lastword.toLowerCase() + " " + word.toLowerCase(), type);
                     }
+
+                    lastword = word;
                 }
             }
 
@@ -240,16 +254,23 @@ public class BigramBayespam
     public static MessageType classify (File file) throws IOException {
         FileInputStream i_s = new FileInputStream(file);
         BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
-        String line, word;
+        String line, lastword = null, bigram;
         double posterior_spam = prior_spam, posterior_regular = prior_regular;
 
         while ((line = in.readLine()) != null) {
             StringTokenizer st = new StringTokenizer(line);         
             
             while (st.hasMoreTokens()) {
-                if (vocab.containsKey((word = st.nextToken()))) {
-                    posterior_regular += vocab.get(word).getRegularLCCP();
-                    posterior_spam    += vocab.get(word).getSpamLCCP();
+
+                if (lastword == null) {
+                    lastword = st.nextToken();
+                    continue;
+                }
+
+
+                if (vocab.containsKey((bigram = lastword + " " + st.nextToken()))) {
+                    posterior_regular += vocab.get(bigram).getRegularLCCP();
+                    posterior_spam    += vocab.get(bigram).getSpamLCCP();
                 }                
             }
         }
@@ -289,20 +310,21 @@ public class BigramBayespam
         readMessages(MessageType.NORMAL);
         readMessages(MessageType.SPAM);
 
+        /// Apply filters.
+        filterByMinOccurance(2);
+
         /// Set all class conditional probabilities.
         setCCPs(1);
 
         /// Loading the test directory.
-        //loadDirectory(args[1]);
+        loadDirectory(args[1]);
 
-	
-	printVocab();
-	System.out.println("There are " + vocab.size() + " unique 'bigrams'");
-		
+        printVocab();
+        System.out.println("There are " + vocab.size() + " unique bigrams.");
 
         /// Count classifications of files in both spam and regular.
-        //directoryClassifier(MessageType.NORMAL);
-        //directoryClassifier(MessageType.SPAM);
+        directoryClassifier(MessageType.NORMAL);
+        directoryClassifier(MessageType.SPAM);
         
         // Now all students must continue from here:
         //
