@@ -250,7 +250,8 @@ public class Bayespam
             StringTokenizer st = new StringTokenizer(line);         
             
             while (st.hasMoreTokens()) {
-                if (vocab.containsKey((word = st.nextToken()))) {
+                word = st.nextToken().toLowerCase();
+                if (vocab.containsKey(word)) {
                     posterior_regular += vocab.get(word).getRegularLCCP();
                     posterior_spam    += vocab.get(word).getSpamLCCP();
                 }                
