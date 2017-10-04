@@ -173,7 +173,7 @@ public class BigramBayespam
     private static Boolean isValidWord (String word) {
         int i, n;
 
-        if ((n = word.length()) < 4) {
+        if ((n = word.length()) < ) {
             return false;
         }
         for (i = 0; i < n; i++) {
@@ -254,27 +254,32 @@ public class BigramBayespam
     public static MessageType classify (File file) throws IOException {
         FileInputStream i_s = new FileInputStream(file);
         BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
-        String line, lastword = null, bigram;
+        String line, lastword = null, bigram, word;
         double posterior_spam = prior_spam, posterior_regular = prior_regular;
 
+        int count = 0;
         while ((line = in.readLine()) != null) {
             StringTokenizer st = new StringTokenizer(line);         
-            
+
             while (st.hasMoreTokens()) {
 
                 if (lastword == null) {
                     lastword = st.nextToken();
                     continue;
                 }
+                word = st.nextToken();
+                bigram = (lastword + " " + word).toLowerCase();
+                if (vocab.containsKey(bigram)) {
 
-
-                if (vocab.containsKey((bigram = lastword + " " + st.nextToken()))) {
                     posterior_regular += vocab.get(bigram).getRegularLCCP();
                     posterior_spam    += vocab.get(bigram).getSpamLCCP();
-                }                
+                    count++;
+                }
+                lastword = word;
             }
         }
-        in.close();       
+        System.out.println("In "+ file.getName() + " there were " + count + " bigrams from the hashtable." );
+        in.close();
         
         return (posterior_regular > posterior_spam ? MessageType.NORMAL : MessageType.SPAM);
     }
@@ -319,7 +324,7 @@ public class BigramBayespam
         /// Loading the test directory.
         loadDirectory(args[1]);
 
-        printVocab();
+        //printVocab();
         System.out.println("There are " + vocab.size() + " unique bigrams.");
 
         /// Count classifications of files in both spam and regular.
