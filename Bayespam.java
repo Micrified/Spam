@@ -289,11 +289,14 @@ public class Bayespam
         setCCPs(1);
 
         /// Loading the test directory.
-        loadDirectory(args[1]);
+        //loadDirectory(args[1]);
 
+	printVocab();
+	System.out.println("There are " + vocab.size() + " unique 'bigrams'");
+		
         /// Count classifications of files in both spam and regular.
-        directoryClassifier(MessageType.NORMAL);
-        directoryClassifier(MessageType.SPAM);
+        //directoryClassifier(MessageType.NORMAL);
+        //directoryClassifier(MessageType.SPAM);
         
         // Now all students must continue from here:
         //
