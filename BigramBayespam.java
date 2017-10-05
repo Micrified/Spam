@@ -5,8 +5,8 @@ public class BigramBayespam
 {
     /// Program constants
     static int minWordLength       = 4;
-    static int eta                 = 1;
-    static int minBigramOccurance  = 2;
+    static double eta                 = 0.1;
+    static int minBigramOccurance  = 1;
 
     // This defines the two types of messages we have.
     static enum MessageType
@@ -159,7 +159,7 @@ public class BigramBayespam
     }
 
     /// Sets all class conditional probabilities.
-    public static void setCCPs (int epsilon) {
+    public static void setCCPs (double epsilon) {
         int nregular = bigramCount(MessageType.NORMAL);
         int nspam = bigramCount(MessageType.SPAM);
         Multiple_Counter counter;

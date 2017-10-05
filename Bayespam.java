@@ -176,7 +176,7 @@ public class Bayespam
             }
         }
         in.close();       
-        System.out.println(file.getName() + " contains " + count + " words from the hash-table");
+        //System.out.println(file.getName() + " contains " + count + " words from the hash-table");
         return (posterior_regular > posterior_spam ? MessageType.NORMAL : MessageType.SPAM);
     }
 
