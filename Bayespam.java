@@ -73,8 +73,8 @@ public class Bayespam
     /* **************************** PROPERTIES *******************************/
 
     /// Program Constants
-    private static double epsilon          = 0.05;
-    private static int minWordLength    = 4;
+    private static double epsilon           = 0.05;
+    private static int minWordLength        = 4;
 
     // Listings of the two subdirectories (regular/ and spam/)
     private static File[] listing_regular = new File[0];

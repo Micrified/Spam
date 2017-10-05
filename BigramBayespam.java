@@ -3,16 +3,14 @@ import java.util.*;
 
 public class BigramBayespam
 {
-    /// Program constants
-    static int minWordLength       = 4;
-    static int eta                 = 1;
-    static int minBigramOccurance  = 2;
 
     // This defines the two types of messages we have.
     static enum MessageType
     {
         NORMAL, SPAM
     }
+
+    /* ************************* MULTIPLE_COUNTER ****************************/
 
     // This a class with two counters (for regular and for spam)
     static class Multiple_Counter
@@ -70,6 +68,13 @@ public class BigramBayespam
         }
     }
 
+    /* **************************** PROPERTIES *******************************/
+
+    /// Program constants
+    static int minWordLength       = 4;
+    static double epsilon          = 1;
+    static int minBigramCount      = 2;
+
     // Listings of the two subdirectories (regular/ and spam/)
     private static File[] listing_regular = new File[0];
     private static File[] listing_spam = new File[0];
@@ -81,40 +86,10 @@ public class BigramBayespam
     // A hash table for the vocabulary (word searching is very fast in a hash table)
     private static Hashtable <String, Multiple_Counter> vocab = new Hashtable <String, Multiple_Counter> ();
 
-    /// Add a bigram to the vocabulary
-    private static void addBigram (String bigram, MessageType type) {
-        Multiple_Counter counter = new Multiple_Counter();
+    /* ************************* BAYESPAM METHODS ****************************/
 
-        if (vocab.containsKey(bigram)) {        /// Use existing counter if one exists.
-            counter = vocab.get(bigram);
-        }
 
-        counter.incrementCounter(type);         /// Increment the counter.
-        vocab.put(bigram, counter);
-    }
-
-    // List the regular and spam messages
-    private static void listDirs(File dir_location)
-    throws IOException
-    {
-        // List all files in the directory passed
-        File[] dir_listing = dir_location.listFiles();
-
-        // Check that there are 2 subdirectories
-        if ( dir_listing.length != 2 )
-        {
-            System.out.println( "- Error: " + dir_location.getName() + " does not contain two subdirectories.\n" );
-            Runtime.getRuntime().exit(0);
-        }
-
-        listing_regular = dir_listing[0].listFiles();
-        listing_spam    = dir_listing[1].listFiles();
-
-        // Verify folders were chosen correctly.
-        if (!(dir_listing[0].getName().equals("regular") && dir_listing[1].getName().equals("spam"))) {
-            throw new FileNotFoundException("Can't locate regular and spam folders in " + dir_location.getName());
-        }
-    }
+    /* ************************** PRINT/UTILITY ******************************/
 
     // Print the current content of the vocabulary
     private static void printVocab()
@@ -147,19 +122,10 @@ public class BigramBayespam
         return n;
     }
 
-    /// Filters all bigrams in the hash table that occur less than 'n' times.
-    public static void filterByMinOccurance (int threshhold) {
-        for (Enumeration <String> e = vocab.keys(); e.hasMoreElements();) {
-            String key = e.nextElement();
-            Multiple_Counter counter = vocab.get(key);
-            if (counter.counter_regular + counter.counter_spam < threshhold) {
-                vocab.remove(key);
-            }
-        }
-    }
+    /* ************************** CCP/VALIDATION *****************************/
 
-    /// Sets all class conditional probabilities.
-    public static void setCCPs (int epsilon) {
+        /// Sets all class conditional probabilities.
+    public static void setCCPs (double epsilon) {
         int nregular = bigramCount(MessageType.NORMAL);
         int nspam = bigramCount(MessageType.SPAM);
         Multiple_Counter counter;
@@ -187,6 +153,93 @@ public class BigramBayespam
             }
         }
         return true;
+    }
+
+    /// Filters all bigrams in the hash table that occur less than 'n' times.
+    public static void filterByMinOccurance (int threshhold) {
+        for (Enumeration <String> e = vocab.keys(); e.hasMoreElements();) {
+            String key = e.nextElement();
+            Multiple_Counter counter = vocab.get(key);
+            if (counter.counter_regular + counter.counter_spam < threshhold) {
+                vocab.remove(key);
+            }
+        }
+    }
+
+
+    /* *************************** CLASSIFICATION ****************************/
+
+    /// Classifies new messages as either Normal or Spam.
+    public static MessageType classify (File file) throws IOException {
+        FileInputStream i_s = new FileInputStream(file);
+        BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
+        String line, word, lastword = null, bigram;
+
+        double posterior_spam = logPrior_spam, posterior_regular = logPrior_regular;
+
+        int count = 0;
+        while ((line = in.readLine()) != null) {
+            StringTokenizer st = new StringTokenizer(line);         
+
+            while (st.hasMoreTokens()) {
+
+                /// Get first word.
+                if (lastword == null) {
+                    lastword = st.nextToken();
+                    continue;
+                }
+                /// Get next word, create bigram.
+                word = st.nextToken();
+                bigram = (lastword + " " + word).toLowerCase();
+
+                /// Increment posterior probabilities if bugram in table.
+                if (vocab.containsKey(bigram)) {
+                    posterior_regular += vocab.get(bigram).getRegularLCCP();
+                    posterior_spam    += vocab.get(bigram).getSpamLCCP();
+		    count++;
+                } 
+                lastword = word;               
+            }
+        }
+        //System.out.println("In "+ file.getName() + " there were " + count + " bigrams from the hashtable." );
+        in.close();
+        
+        return (posterior_regular > posterior_spam ? MessageType.NORMAL : MessageType.SPAM);
+    }
+
+        /// Determines the ratio of email classifications for files in a given directory. 
+    public static void directoryClassifier (MessageType type) throws IOException {
+        int spam = 0, regular = 0;
+
+        /// Create list of all files in directory.
+        File[] files = (type == MessageType.SPAM ? listing_spam : listing_regular);
+
+        /// Classify all files.
+        for (int i = 0; i < files.length; i++) {
+            if (classify(files[i]) == MessageType.SPAM) {
+                spam++;
+            } else {
+                regular++;
+            }
+        }
+
+        /// Print ratio.
+        String listingType = (type == MessageType.SPAM) ? "Spam" : "Regular";
+        System.out.println(listingType + " has " + spam + " spam files and " + regular + " regular ones.");
+    }
+
+    /* ************************* VOCAB CONSTRUCTION **************************/
+
+    /// Add a bigram to the vocabulary
+    private static void addBigram (String bigram, MessageType type) {
+        Multiple_Counter counter = new Multiple_Counter();
+
+        if (vocab.containsKey(bigram)) {        /// Use existing counter if one exists.
+            counter = vocab.get(bigram);
+        }
+
+        counter.incrementCounter(type);         /// Increment the counter.
+        vocab.put(bigram, counter);
     }
 
     /// Read the words from messages and add them to your vocabulary. The enum type determines whether the messages are regular or not  
@@ -234,63 +287,27 @@ public class BigramBayespam
         }
     }
 
-    /// Determines the ratio of email classifications for files in a given directory. 
-    public static void directoryClassifier (MessageType type) throws IOException {
-        int spam = 0, regular = 0;
+    // List the regular and spam messages
+    private static void listDirs(File dir_location)
+    throws IOException
+    {
+        // List all files in the directory passed
+        File[] dir_listing = dir_location.listFiles();
 
-        /// Create list of all files in directory.
-        File[] files = (type == MessageType.SPAM ? listing_spam : listing_regular);
-
-        /// Classify all files.
-        for (int i = 0; i < files.length; i++) {
-            if (classify(files[i]) == MessageType.SPAM) {
-                spam++;
-            } else {
-                regular++;
-            }
+        // Check that there are 2 subdirectories
+        if ( dir_listing.length != 2 )
+        {
+            System.out.println( "- Error: " + dir_location.getName() + " does not contain two subdirectories.\n" );
+            Runtime.getRuntime().exit(0);
         }
 
-        /// Print ratio.
-        String listingType = (type == MessageType.SPAM) ? "Spam" : "Regular";
-        System.out.println(listingType + " has " + spam + " spam files and " + regular + " regular ones.");
-    }
+        listing_regular = dir_listing[0].listFiles();
+        listing_spam    = dir_listing[1].listFiles();
 
-    /// Classifies new messages as either Normal or Spam.
-    public static MessageType classify (File file) throws IOException {
-        FileInputStream i_s = new FileInputStream(file);
-        BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
-        String line, word, lastword = null, bigram;
-
-        double posterior_spam = logPrior_spam, posterior_regular = logPrior_regular;
-
-        int count = 0;
-        while ((line = in.readLine()) != null) {
-            StringTokenizer st = new StringTokenizer(line);         
-
-            while (st.hasMoreTokens()) {
-
-                /// Get first word.
-                if (lastword == null) {
-                    lastword = st.nextToken();
-                    continue;
-                }
-                /// Get next word, create bigram.
-                word = st.nextToken();
-                bigram = (lastword + " " + word).toLowerCase();
-
-                /// Increment posterior probabilities if bugram in table.
-                if (vocab.containsKey(bigram)) {
-                    posterior_regular += vocab.get(bigram).getRegularLCCP();
-                    posterior_spam    += vocab.get(bigram).getSpamLCCP();
-		    count++;
-                } 
-                lastword = word;               
-            }
+        // Verify folders were chosen correctly.
+        if (!(dir_listing[0].getName().equals("regular") && dir_listing[1].getName().equals("spam"))) {
+            throw new FileNotFoundException("Can't locate regular and spam folders in " + dir_location.getName());
         }
-        //System.out.println("In "+ file.getName() + " there were " + count + " bigrams from the hashtable." );
-        in.close();
-        
-        return (posterior_regular > posterior_spam ? MessageType.NORMAL : MessageType.SPAM);
     }
 
     /// Loads a directory and saves all spam listings to listing_spam and regular listings to listing_regular.
@@ -306,12 +323,18 @@ public class BigramBayespam
         // Initialize the regular and spam lists
         listDirs(dir_location);
     }
+
+    /* ****************************** MAIN ***********************************/
    
     public static void main(String[] args)
     throws IOException
     {
         /// Print program parameters.
-        System.out.println("minWordLength = " + minWordLength + ", eta = " + eta + ", minBigramOccurance = " + minBigramOccurance);
+        System.out.println("**************************** BIGRAM SPAM CLASSIFIER ****************************\n");
+        System.out.println("Minimum Word Length:\t\t" + minWordLength);
+        System.out.println("Epsilon:\t\t\t" + epsilon);
+        System.out.println("Minimum Bigram Threshold:\t" + minBigramCount + "\n");
+        System.out.println("*********************************** RESULTS ************************************\n");
 
         /// Loading the training directory.
         loadDirectory(args[0]);
@@ -328,10 +351,10 @@ public class BigramBayespam
         readMessages(MessageType.SPAM);
 
         /// Apply filters.
-        filterByMinOccurance(minBigramOccurance);
+        filterByMinOccurance(minBigramCount);
 
         /// Set all class conditional probabilities.
-        setCCPs(eta);
+        setCCPs(epsilon);
 
         /// Loading the test directory.
         loadDirectory(args[1]);
