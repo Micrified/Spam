@@ -338,6 +338,12 @@ public class Bayespam
         /// Load arguments.
         getArgs(args);
 
+        // Print program parameters.
+        System.out.println("**************************** UNIGRAM SPAM CLASSIFIER ***************************\n");
+        System.out.println("Minimum Word Length:\t\t" + minWordLength);
+        System.out.println("Epsilon:\t\t\t" + epsilon);
+        System.out.println("*********************************** RESULTS ************************************\n");
+
         /// Loading the training directory.
         loadDirectory(trainPath);
 
