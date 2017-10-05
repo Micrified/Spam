@@ -3,7 +3,6 @@ import java.util.*;
 
 public class BigramBayespam
 {
-
     // This defines the two types of messages we have.
     static enum MessageType
     {
