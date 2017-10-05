@@ -193,11 +193,11 @@ public class BigramBayespam
                 word = st.nextToken();
                 bigram = (lastword + " " + word).toLowerCase();
 
-                /// Increment posterior probabilities if bugram in table.
+                /// Increment posterior probabilities if bigram in table.
                 if (vocab.containsKey(bigram)) {
                     posterior_regular += vocab.get(bigram).getRegularLCCP();
                     posterior_spam    += vocab.get(bigram).getSpamLCCP();
-		    count++;
+		            count++;
                 } 
                 lastword = word;               
             }
@@ -387,8 +387,8 @@ public class BigramBayespam
         double nregular      = listing_regular.length;
         double nspam         = listing_spam.length;
         double ntotal        = nregular + nspam;
-        logPrior_regular = Math.log10(nregular) - Math.log10(ntotal);
-        logPrior_spam    = Math.log10(nspam) - Math.log10(ntotal);
+        logPrior_regular     = Math.log10(nregular) - Math.log10(ntotal);
+        logPrior_spam        = Math.log10(nspam) - Math.log10(ntotal);
 
         // Read the e-mail messages
         readMessages(MessageType.NORMAL);
@@ -408,18 +408,5 @@ public class BigramBayespam
         /// Count classifications of files in both spam and regular.
         directoryClassifier(MessageType.NORMAL);
         directoryClassifier(MessageType.SPAM);
-        
-        // Now all students must continue from here:
-        //
-        // 1) A priori class probabilities must be computed from the number of regular and spam messages
-        // 2) The vocabulary must be clean: punctuation and digits must be removed, case insensitive
-        // 3) Conditional probabilities must be computed for every word
-        // 4) A priori probabilities must be computed for every word
-        // 5) Zero probabilities must be replaced by a small estimated value
-        // 6) Bayes rule must be applied on new messages, followed by argmax classification
-        // 7) Errors must be computed on the test set (FAR = false accept rate (misses), FRR = false reject rate (false alarms))
-        // 8) Improve the code and the performance (speed, accuracy)
-        //
-        // Use the same steps to create a class BigramBayespam which implements a classifier using a vocabulary consisting of bigrams
     }
 }

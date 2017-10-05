@@ -77,7 +77,7 @@ public class Bayespam
     private static String testPath          = null;
 
     /// Program Constants
-    private static double epsilon           = 0.0002;
+    private static double epsilon           = 1.0;
     private static int minWordLength        = 4;
 
     // Listings of the two subdirectories (regular/ and spam/)
@@ -351,8 +351,8 @@ public class Bayespam
         double nregular         = listing_regular.length;
         double nspam            = listing_spam.length;
         double ntotal           = nregular + nspam;
-        logPrior_regular           = Math.log10(nregular) - Math.log10(ntotal);
-        logPrior_spam              = Math.log10(nspam) - Math.log10(ntotal);
+        logPrior_regular        = Math.log10(nregular) - Math.log10(ntotal);
+        logPrior_spam           = Math.log10(nspam) - Math.log10(ntotal);
 
         // Read the e-mail messages
         readMessages(MessageType.NORMAL);
