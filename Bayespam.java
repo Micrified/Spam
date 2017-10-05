@@ -77,7 +77,7 @@ public class Bayespam
     private static String testPath          = null;
 
     /// Program Constants
-    private static double epsilon           = 0.05;
+    private static double epsilon           = 1;
     private static int minWordLength        = 4;
 
     // Listings of the two subdirectories (regular/ and spam/)
