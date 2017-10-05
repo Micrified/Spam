@@ -73,7 +73,7 @@ public class Bayespam
     /* **************************** PROPERTIES *******************************/
 
     /// Program Constants
-    private static double epsilon           = 0.05;
+    private static double epsilon           = 0.0002;
     private static int minWordLength        = 4;
 
     // Listings of the two subdirectories (regular/ and spam/)
@@ -311,6 +311,9 @@ public class Bayespam
         /// Set all class conditional probabilities.
         setCCPs();
 		
+	/// Loading the test directory.
+        loadDirectory(args[1]);
+	
         /// Count classifications of files in both spam and regular.
         directoryClassifier(MessageType.NORMAL);
         directoryClassifier(MessageType.SPAM);
