@@ -72,6 +72,10 @@ public class Bayespam
     
     /* **************************** PROPERTIES *******************************/
 
+    /// Train and Test Directories.
+    private static String trainPath         = null;
+    private static String testPath          = null;
+
     /// Program Constants
     private static double epsilon           = 0.0002;
     private static int minWordLength        = 4;
@@ -290,12 +294,58 @@ public class Bayespam
     }
 
     /* ****************************** MAIN ***********************************/
+
+    /// Reads in all program flags.
+    /// 1. <dir>        training directory.
+    /// 2. <dir>        test directory.
+    /// In any order following 1 and 2.
+    /// *. -e=<double>  epsilon.
+    /// *. -l=<int>     min word length.
+    public static void getArgs (String [] args) throws RuntimeException {
+
+        /// Require at minimum both train and test directories.
+        if (args.length < 2) {
+            throw new IllegalArgumentException("You must provide a training and testing directory!");
+        }
+
+        trainPath = args[0];
+        testPath = args[1];
+
+        /// Read in remaining optional flags.
+        for (int i = 2; i < args.length; i++) {
+            String prefix, suffix, arg = args[i];
+
+            if (arg.length() < 4) {
+                throw new IllegalArgumentException("Unknown argument: " + arg);
+            } else {
+                prefix = arg.substring(0,3);
+                suffix = arg.substring(3);
+            }
+            
+            if (prefix.equals("-l=")) {
+                minWordLength = Integer.parseInt(suffix);
+            } else if (prefix.equals("-e=")) {
+                epsilon = Double.parseDouble(suffix);
+            } else {
+                throw new IllegalArgumentException("Unknown argument: " + arg);
+            }
+        }
+    }
    
     public static void main(String[] args)
     throws IOException
     {
+        /// Load arguments.
+        getArgs(args);
+
+        // Print program parameters.
+        System.out.println("**************************** UNIGRAM SPAM CLASSIFIER ***************************\n");
+        System.out.println("Minimum Word Length:\t\t" + minWordLength);
+        System.out.println("Epsilon:\t\t\t" + epsilon);
+        System.out.println("*********************************** RESULTS ************************************\n");
+
         /// Loading the training directory.
-        loadDirectory(args[0]);
+        loadDirectory(trainPath);
 
         /// Compute prior probabilities now that directory contents are loaded.
         double nregular         = listing_regular.length;
@@ -308,8 +358,12 @@ public class Bayespam
         readMessages(MessageType.NORMAL);
         readMessages(MessageType.SPAM);
 
+
         /// Set all class conditional probabilities.
         setCCPs();
+
+        /// Loading the testing directory.
+        loadDirectory(testPath);
 		
 	/// Loading the test directory.
         loadDirectory(args[1]);
@@ -317,18 +371,6 @@ public class Bayespam
         /// Count classifications of files in both spam and regular.
         directoryClassifier(MessageType.NORMAL);
         directoryClassifier(MessageType.SPAM);
-        
-        // Now all students must continue from here:
-        //
-        // 1) A priori class probabilities must be computed from the number of regular and spam messages
-        // 2) The vocabulary must be clean: punctuation and digits must be removed, case insensitive
-        // 3) Conditional probabilities must be computed for every word
-        // 4) A priori probabilities must be computed for every word
-        // 5) Zero probabilities must be replaced by a small estimated value
-        // 6) Bayes rule must be applied on new messages, followed by argmax classification
-        // 7) Errors must be computed on the test set (FAR = false accept rate (misses), FRR = false reject rate (false alarms))
-        // 8) Improve the code and the performance (speed, accuracy)
-        //
-        // Use the same steps to create a class BigramBayespam which implements a classifier using a vocabulary consisting of bigrams
+	System.out.println("Number of unique words: " + vocab.size());
     }
 }

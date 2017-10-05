@@ -8,3 +8,4 @@ hold on;
 plot(epsilon,falseAcc)
 xlabel('epsilon');
 ylabel('count');
+axis([-1 7 0 50]);

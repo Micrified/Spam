@@ -157,7 +157,7 @@ public class BigramBayespam
     }
 
     /// Filters all bigrams in the hash table that occur less than 'n' times.
-    public static void filterByMinOccurance (int threshhold) {
+    public static void filterByMinOccurence (int threshhold) {
         for (Enumeration <String> e = vocab.keys(); e.hasMoreElements();) {
             String key = e.nextElement();
             Multiple_Counter counter = vocab.get(key);
@@ -395,7 +395,7 @@ public class BigramBayespam
         readMessages(MessageType.SPAM);
 
         /// Apply filters.
-        filterByMinOccurance(minBigramCount);
+        filterByMinOccurence(minBigramCount);
 
         /// Set all class conditional probabilities.
         setCCPs(epsilon);
