@@ -71,6 +71,8 @@ public class BigramBayespam
     /* **************************** PROPERTIES *******************************/
 
     /// Program constants
+    static String trainPath        = null;
+    static String testPath         = null;
     static int minWordLength       = 4;
     static double epsilon          = 1;
     static int minBigramCount      = 2;
@@ -324,11 +326,54 @@ public class BigramBayespam
         listDirs(dir_location);
     }
 
-    /* ****************************** MAIN ***********************************/
-   
+    /* ****************************** MAIN/ARGS ***********************************/
+
+    /// Reads in all program flags.
+    /// 1. <dir>        training directory.
+    /// 2. <dir>        test directory.
+    /// In any order following 1 and 2.
+    /// *. -e=<double>  epsilon.
+    /// *. -b=<int>     min bigram count.
+    /// *. -l=<int>     min word length.
+    public static void getArgs (String [] args) throws RuntimeException {
+
+        /// Require at minimum both train and test directories.
+        if (args.length < 2) {
+            throw new IllegalArgumentException("You must provide a training and testing directory!");
+        }
+
+        trainPath = args[0];
+        testPath = args[1];
+
+        /// Read in remaining optional flags.
+        for (int i = 2; i < args.length; i++) {
+            String prefix, suffix, arg = args[i];
+
+            if (arg.length() < 4) {
+                throw new IllegalArgumentException("Unknown argument: " + arg);
+            } else {
+                prefix = arg.substring(0,3);
+                suffix = arg.substring(3);
+            }
+        
+            if (prefix.equals("-b=")) {
+                minBigramCount = Integer.parseInt(suffix);
+            } else if (prefix.equals("-l=")) {
+                minWordLength = Integer.parseInt(suffix);
+            } else if (prefix.equals("-e=")) {
+                epsilon = Double.parseDouble(suffix);
+            } else {
+                throw new IllegalArgumentException("Unknown argument: " + arg);
+            }
+        }
+    }
+
     public static void main(String[] args)
     throws IOException
     {
+        /// Read program parameters.
+        getArgs(args);
+
         /// Print program parameters.
         System.out.println("**************************** BIGRAM SPAM CLASSIFIER ****************************\n");
         System.out.println("Minimum Word Length:\t\t" + minWordLength);
@@ -337,7 +382,7 @@ public class BigramBayespam
         System.out.println("*********************************** RESULTS ************************************\n");
 
         /// Loading the training directory.
-        loadDirectory(args[0]);
+        loadDirectory(trainPath);
 
         /// Compute log prior probabilities now that directory contents are loaded.
         double nregular      = listing_regular.length;
@@ -357,7 +402,7 @@ public class BigramBayespam
         setCCPs(epsilon);
 
         /// Loading the test directory.
-        loadDirectory(args[1]);
+        loadDirectory(testPath);
 
         System.out.println("There are " + vocab.size() + " unique bigrams.");
 
